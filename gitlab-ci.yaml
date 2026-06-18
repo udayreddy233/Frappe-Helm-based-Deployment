@@ -1,0 +1,99 @@
+##https://github.com/castlecraft/custom_containers/blob/main/.gitlab-ci.yml
+
+
+include: 
+  - project: 'devops/continuous-delivery/ci-templates'
+    file: '/Workflows/Frappe-Pipelines.gitlab-ci.yml'
+
+
+build_version:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]   # ← THIS FIXES THE ERROR
+  script:
+    # Create Harbor auth
+    - mkdir -p /kaniko/.docker
+    - |
+      cat <<EOF >/kaniko/.docker/config.json
+      {
+        "auths": {
+          "https://harbor.asakta.cloud": {
+            "username": "cicd",
+            "password": "Asakta@123"
+          }
+        }
+      }
+      EOF
+    - CACHE_BUST=$(date +%s)
+    - echo $CI_COMMIT_SHA
+
+    # Build & Push with all build args
+    - |
+      /kaniko/executor \
+        --dockerfile=Dockerfile \
+        --verbosity=error \
+        --context=$CI_PROJECT_DIR \
+        --build-arg CACHE_BUST=${CACHE_BUST} \
+        --build-arg SITE_NAME=gis-survey-preprod-admin.asakta.cloud \
+        --build-arg REDIS_QUEUE=redis://10.100.128.24:6384 \
+        --build-arg REDIS_CACHE=redis://10.100.128.24:6385 \
+        --build-arg REDIS_SOCKETIO=redis://10.100.128.24:6386 \
+        --destination=harbor.asakta.cloud/test/survey:$CI_COMMIT_SHA  \
+        --cache=true \
+        --cache-copy-layers=true \
+        
+
+
+deploy_to_k8s:
+  stage: deploy
+  image:
+    name: alpine/helm:3.14.0
+    entrypoint: [""]
+
+  environment:
+    name: staging
+
+  before_script:
+    - apk add --no-cache curl kubectl
+    - mkdir -p ~/.kube
+    - echo "$KUBECONFIG_B64" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+    - helm registry login ${HARBOR_REGISTRY} --username ${HARBOR_USER} --password ${HARBOR_PASSWORD}
+
+  script:
+    - echo "Deploying tag → $CI_COMMIT_SHA"
+
+    - |
+      : "${GIS_USER:?GIS_USER is missing}"
+      : "${GIS_PASSWORD:?GIS_PASSWORD is missing}"
+      : "${GIS_BASE_URL:?GIS_BASE_URL is missing}"
+      : "${SUPERSET_URL:?SUPERSET_URL is missing}"
+      : "${SUPERSET_USERNAME:?SUPERSET_USERNAME is missing}"
+      : "${SUPERSET_PASSWORD:?SUPERSET_PASSWORD is missing}"
+
+    - |
+      echo "GIS_USER length: ${#GIS_USER}"
+      echo "GIS_BASE_URL length: ${#GIS_BASE_URL}"
+      echo "SUPERSET_URL length: ${#SUPERSET_URL}"
+      echo "SUPERSET_USERNAME length: ${#SUPERSET_USERNAME}"
+
+    - |
+      helm upgrade --install survey ${HELM_CHART} \
+        --version ${HELM_CHART_VERSION} \
+        --namespace gis-survey \
+        --values values.yaml \
+        --set image.tag="$CI_COMMIT_SHA" \
+        --set-string siteConfig.values.gis_user="$GIS_USER" \
+        --set-string siteConfig.values.gis_password="$GIS_PASSWORD" \
+        --set-string siteConfig.values.gis_end_url="$GIS_BASE_URL" \
+        --set-string siteConfig.values.superset_url="$SUPERSET_URL" \
+        --set-string siteConfig.values.superset_username="$SUPERSET_USERNAME" \
+        --set-string siteConfig.values.superset_password="$SUPERSET_PASSWORD" \
+        --wait \
+        --timeout 10m
+
+    - kubectl rollout status deployment/gis-survey-all-in-one -n gis-survey
+
+  only:
+    - staging
