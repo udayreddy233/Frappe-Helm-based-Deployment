@@ -1,0 +1,6 @@
+apiVersion: v2
+name: frappe
+description: Generic Frappe/ERPNext Helm Chart — reusable across deployments
+type: application
+version: 0.6.0
+appVersion: "1.0.0"

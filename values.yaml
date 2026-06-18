@@ -1,0 +1,69 @@
+app:
+  name: ""
+
+namespace: ""
+
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+site:
+  name: ""
+
+persistence:
+  claimName: ""
+
+gateway:
+  name: ""
+  namespace: ""
+  hostname: ""
+
+redis:
+  cache: ""
+
+resources:
+  backend:
+    requests:
+      cpu: "300m"
+      memory: "1.5Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  websocket:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+  workerLong:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
+  workerShort:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
+  scheduler:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "100m"
+      memory: "256Mi"
+  frontend:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+nodeName: ""
