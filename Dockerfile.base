@@ -1,0 +1,99 @@
+FROM python:3.11.6-slim-bookworm
+
+ARG WKHTMLTOPDF_VERSION=0.12.6.1-3
+ARG WKHTMLTOPDF_DISTRO=bookworm
+ARG NODE_VERSION=20.19.0
+
+ENV NVM_DIR=/home/frappe/.nvm
+ENV PATH=${NVM_DIR}/versions/node/v${NODE_VERSION}/bin/:${PATH}
+
+RUN useradd -ms /bin/bash frappe \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -qqy tzdata gpg wget \
+    && apt-get purge -y --auto-remove 'postgresql*' || true \
+    && wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+        | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt/ bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install --no-install-recommends -y postgresql-client-16 \
+    && rm -f /usr/bin/psql /usr/bin/pg_config \
+    && ln -s /usr/lib/postgresql/16/bin/psql /usr/bin/psql \
+    && ln -s /usr/lib/postgresql/16/bin/pg_config /usr/bin/pg_config \
+    && psql --version | grep -q "16\." || { echo "PostgreSQL 16 not active"; exit 1; } \
+    && pg_config --version | grep -q "16\." || { echo "pg_config not 16"; exit 1; } \
+    && ln -fs /usr/share/zoneinfo/Asia/Calcutta /etc/localtime \
+    && dpkg-reconfigure -f noninteractive tzdata \
+    && pip install wheel -q \
+    && pip install orjson \
+    && pip install boto3 \
+    && pip install botocore \
+    && pip install --upgrade setuptools pip -q \
+    && apt-get install --no-install-recommends -qqy \
+        curl git vim nginx gettext-base file \
+        libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0 \
+        libpangocairo-1.0-0 restic gpg less cron pkg-config \
+        wait-for-it jq \
+        build-essential libpq-dev \
+    && mkdir -p ${NVM_DIR} \
+    && chown -R frappe:frappe /home/frappe \
+    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
+    && bash -c ". $NVM_DIR/nvm.sh \
+        && nvm install ${NODE_VERSION} \
+        && nvm use ${NODE_VERSION} \
+        && npm install -g yarn \
+        && nvm alias default ${NODE_VERSION}" \
+    && rm -rf ${NVM_DIR}/.cache \
+    && if [ \"$(uname -m)\" = \"aarch64\" ]; then export ARCH=arm64; fi \
+    && if [ \"$(uname -m)\" = \"x86_64\" ]; then export ARCH=amd64; fi \
+    && downloaded_file=wkhtmltox_${WKHTMLTOPDF_VERSION}.${WKHTMLTOPDF_DISTRO}_${ARCH}.deb \
+    && curl -sLO https://github.com/wkhtmltopdf/packaging/releases/download/${WKHTMLTOPDF_VERSION}/${downloaded_file} \
+    && apt-get install -y ./${downloaded_file} \
+    && rm ${downloaded_file} \
+    && pip3 install frappe-bench --break-system-packages \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -fr /etc/nginx/sites-enabled/default
+
+USER frappe
+WORKDIR /home/frappe
+
+ARG FRAPPE_BRANCH
+ARG FRAPPE_PATH
+
+RUN bench init \
+    --frappe-branch=${FRAPPE_BRANCH} \
+    --frappe-path=${FRAPPE_PATH} \
+    --skip-redis-config-generation \
+    frappe-bench
+
+WORKDIR /home/frappe/frappe-bench
+
+RUN bench pip install --upgrade pip
+RUN bench pip install wheel
+RUN bench pip install setuptools==68.2.2
+RUN bench pip install dropbox
+RUN bench pip install boto3
+
+ARG SITE_NAME
+ARG DB_TYPE
+ARG DB_HOST
+ARG DB_PORT
+ARG DB_NAME
+ARG DB_USER
+ARG DB_PASSWORD
+ARG DB_ROOT_PASSWORD
+ARG ADMIN_PASSWORD
+
+RUN bench new-site ${SITE_NAME} \
+    --db-type=${DB_TYPE} \
+    --db-host=${DB_HOST} \
+    --db-port=${DB_PORT} \
+    --db-name=${DB_NAME} \
+    --db-user=${DB_USER} \
+    --db-password=${DB_PASSWORD} \
+    --db-root-password=${DB_ROOT_PASSWORD} \
+    --admin-password=${ADMIN_PASSWORD} \
+    --force || true
+
+USER frappe
+WORKDIR /home/frappe
