@@ -29,25 +29,22 @@ GitLab CI deploys Helm chart to Kubernetes
 
 ```text
 .
-├── Chart.yaml
-├── values.yaml
-├── templates/
-│   ├── _helpers.tpl
-│   ├── deployment.yaml
-│   ├── httproute.yaml
-│   ├── service.yaml
-│   └── site-config-secret.yaml
-├── Dockerfile.base
-├── Dockerfile
 ├── ci/
 │   ├── nginx-template.conf
 │   └── nginx-entrypoint.sh
-├── frappe-0.2.0.tgz
-├── frappe-0.3.0.tgz
-├── frappe-0.5.0.tgz
-├── frappe-0.6.0.tgz
-└── .gitlab-ci.yml
-```
+├── helm/
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   └── templates/
+│       ├── _helpers.tpl
+│       ├── deployment.yaml
+│       ├── httproute.yaml
+│       ├── service.yaml
+│       └── site-config-secret.yaml
+├── Dockerfile
+├── Dockerfile.base
+├── README.md
+└── gitlab-ci.yaml
 
 ## Components
 
