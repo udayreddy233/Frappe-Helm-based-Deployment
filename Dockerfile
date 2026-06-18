@@ -22,10 +22,10 @@ RUN bench set-config -g server_script_enabled 1 \
 
 RUN bench use ${SITE_NAME}
 
-RUN bench get-app https://qasim:glpat-sa2V_gaDMsfbiC84GRSUg286MQp1OmgH.01.0w0eluw9d@gitlab.asakta.com/asakta/survey-v2.git --branch main
-RUN bench get-app https://qasim:glpat-sa2V_gaDMsfbiC84GRSUg286MQp1OmgH.01.0w0eluw9d@gitlab.asakta.com/asakta/commit.git --branch main
-RUN bench get-app https://qasim:glpat-sa2V_gaDMsfbiC84GRSUg286MQp1OmgH.01.0w0eluw9d@gitlab.asakta.com/asakta/frappe_dfp_minio.git --branch main
-RUN bench get-app https://qasim:glpat-sa2V_gaDMsfbiC84GRSUg286MQp1OmgH.01.0w0eluw9d@gitlab.asakta.com/asakta/frappe-extensions.git --branch main
+RUN bench get-app https://uday:glpat-sa2V_gaDMsfbiC84GRSUg286MQp1@gitlab.asakta.com/asakta/survey-v2.git --branch main
+RUN bench get-app https://uday:glpat-sa2V_gaDMsfbRSUg286MQp1OmgH.01.0w0eluw9d@gitlab.asakta.com/asakta/commit.git --branch main
+RUN bench get-app https://uday:glpat-sa2V_gaDMsfbiC84GRQp1OmgH.01.0w0eluw9d@gitlab.asakta.com/asakta/frappe_dfp_minio.git --branch main
+RUN bench get-app https://uday:glpat-sa2V_gaDMsfbiC8Ug286MQp1OmgH.01.0w0eluw9d@gitlab.asakta.com/asakta/frappe-extensions.git --branch main
 
 RUN bench install-app frappe_extensions
 RUN bench install-app commit
