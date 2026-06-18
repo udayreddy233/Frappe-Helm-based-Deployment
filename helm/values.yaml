@@ -1,27 +1,44 @@
+# App name — used for deployment name, service name, labels, httproute
 app:
-  name: ""
+  name: pass-values
 
-namespace: ""
-
-image:
-  repository: ""
-  tag: ""
-  pullPolicy: IfNotPresent
-
-site:
-  name: ""
-
-persistence:
-  claimName: ""
-
-gateway:
-  name: ""
-  namespace: ""
-  hostname: ""
+# Namespace
+namespace: pass-values
 
 redis:
-  cache: ""
+  cache: "redis://server-ip:6385"
 
+# Image
+image:
+  repository: harbor.asakta.cloud/test/survey
+  digest: "sha256:5de9c5d65a96ef9f95e5d57b3f1cd9bb99829accea6be73844017327584c8871"
+  pullPolicy: IfNotPresent
+
+# Site config
+site:
+  name: pass-values
+
+# PVC
+persistence:
+  claimName: pass-values
+
+# Gateway
+gateway:
+  name: pass-values
+  namespace: pass-values
+  hostname: pass-values
+
+siteConfig:
+  enabled: true
+  values:
+    gis_user: ""
+    gis_password: ""
+    gis_end_url: ""
+    superset_url: ""
+    superset_username: ""
+    superset_password: ""
+
+# Resources per container
 resources:
   backend:
     requests:
@@ -66,4 +83,3 @@ resources:
       cpu: "200m"
       memory: "256Mi"
 
-nodeName: ""
